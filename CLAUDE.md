@@ -22,7 +22,7 @@ See `docs/diagrams/software-arch.mermaid` for the full diagram. Key containers:
 - **API** (Nest.js) → business rules, auth, reads/writes DB, uploads to storage, publishes jobs to queue, sends emails
 - **Video Worker** (FFmpeg) → consumes jobs from queue, processes videos, updates DB and storage
 - **Database** (PostgreSQL) → users, channels, videos, comments, likes
-- **Object Storage** (S3/MinIO) → video files and thumbnails
+- **Object Storage** (managed S3 / local RustFS) → video files and thumbnails
 - **Message Queue** (TBD) → video processing job queue
 - **Email Service** (SMTP) → account confirmation and password recovery
 

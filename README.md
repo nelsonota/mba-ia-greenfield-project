@@ -46,7 +46,7 @@ O projeto é um monorepo baseado em containers Docker. Cada subprojeto sobe sua 
 - **Database** (PostgreSQL 17) — usuários, canais e tokens de autenticação.
 - **Email Service** (Mailpit) — captura os e-mails transacionais (confirmação de conta e recuperação de senha) em uma UI local.
 - **Video Worker** (FFmpeg) — processamento de vídeos *(planejado — Fase 03)*.
-- **Object Storage** (S3/MinIO) — arquivos de vídeo e thumbnails *(planejado — Fase 03)*.
+- **Object Storage** (S3/RustFS local) — arquivos de vídeo e thumbnails *(planejado — Fase 03)*.
 - **Message Queue** — fila de processamento de vídeos *(planejado — Fase 03)*.
 
 O diagrama de arquitetura completo (C4) está em `docs/diagrams/software-arch.mermaid`.

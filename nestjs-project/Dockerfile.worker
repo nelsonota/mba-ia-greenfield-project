@@ -1,0 +1,30 @@
+FROM node:25.6.0-slim AS build
+
+WORKDIR /home/node/app
+COPY package*.json ./
+RUN npm ci
+COPY --chown=node:node . .
+RUN npm run build
+
+FROM node:25.6.0-slim AS runtime
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ffmpeg \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV NODE_ENV=production
+WORKDIR /home/node/app
+COPY --chown=node:node package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY --from=build --chown=node:node /home/node/app/dist ./dist
+
+USER node
+CMD ["npm", "run", "start:worker"]
+
+FROM build AS test
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ffmpeg \
+  && rm -rf /var/lib/apt/lists/*
+
+CMD ["node", "./node_modules/jest/bin/jest.js", "--runInBand"]

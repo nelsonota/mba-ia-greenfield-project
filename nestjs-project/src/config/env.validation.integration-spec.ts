@@ -8,11 +8,23 @@ const requiredEnv = {
   JWT_REFRESH_SECRET: 'refresh-secret',
 };
 
-const validate = (env: Record<string, string>) =>
-  envValidationSchema.validate(
+interface ValidatedEnvironment {
+  SWAGGER_ENABLED?: string;
+}
+
+function validate(env: Record<string, string>): {
+  error?: Error;
+  value: ValidatedEnvironment;
+} {
+  const result = envValidationSchema.validate(
     { ...requiredEnv, ...env },
     { allowUnknown: true, abortEarly: false },
   );
+  return {
+    error: result.error,
+    value: result.value as unknown as ValidatedEnvironment,
+  };
+}
 
 describe('envValidationSchema — SWAGGER_ENABLED', () => {
   it('should reject SWAGGER_ENABLED with an invalid value', () => {

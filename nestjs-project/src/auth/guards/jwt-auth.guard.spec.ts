@@ -2,6 +2,7 @@ import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
+import { IS_OPTIONAL_AUTH_KEY } from '../decorators/optional-auth.decorator';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 const TEST_SECRET = 'test-secret';
@@ -50,6 +51,31 @@ describe('JwtAuthGuard', () => {
     mockReflector.getAllAndOverride.mockReturnValue(true);
     const ctx = makeContext({ headers: {} });
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
+  });
+
+  it('allows anonymous access on optional-auth routes', async () => {
+    mockReflector.getAllAndOverride.mockImplementation(
+      (key: string) => key === IS_OPTIONAL_AUTH_KEY,
+    );
+    const ctx = makeContext({ headers: {} });
+
+    await expect(guard.canActivate(ctx)).resolves.toBe(true);
+  });
+
+  it('attaches a valid user on optional-auth routes', async () => {
+    mockReflector.getAllAndOverride.mockImplementation(
+      (key: string) => key === IS_OPTIONAL_AUTH_KEY,
+    );
+    const token = jwtService.sign({
+      sub: 'owner-1',
+      email: 'owner@example.com',
+    });
+    const request: Record<string, unknown> = {
+      headers: { authorization: `Bearer ${token}` },
+    };
+
+    await expect(guard.canActivate(makeContext(request))).resolves.toBe(true);
+    expect((request.user as Record<string, unknown>).sub).toBe('owner-1');
   });
 
   it('passes with a valid JWT and attaches payload to request.user', async () => {

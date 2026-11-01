@@ -1,0 +1,2 @@
+export const MAX_VIDEO_SIZE_BYTES = 10_000_000_000;
+export const IDEMPOTENCY_KEY_MAX_LENGTH = 255;

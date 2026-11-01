@@ -38,8 +38,8 @@ describe('MailService (integration)', () => {
 
     const messages = await getMailpitMessages();
     expect(messages).toHaveLength(1);
-    expect(messages[0].To[0].Address).toBe('user@example.com');
-    expect(messages[0].Subject).toBe(MAIL_SUBJECTS.CONFIRMATION);
+    expect(messages[0]?.To[0]?.Address).toBe('user@example.com');
+    expect(messages[0]?.Subject).toBe(MAIL_SUBJECTS.CONFIRMATION);
   });
 
   it('sendConfirmationEmail renders the confirmation URL in the body', async () => {
@@ -66,8 +66,8 @@ describe('MailService (integration)', () => {
 
     const messages = await getMailpitMessages();
     expect(messages).toHaveLength(1);
-    expect(messages[0].To[0].Address).toBe('user@example.com');
-    expect(messages[0].Subject).toBe(MAIL_SUBJECTS.PASSWORD_RESET);
+    expect(messages[0]?.To[0]?.Address).toBe('user@example.com');
+    expect(messages[0]?.Subject).toBe(MAIL_SUBJECTS.PASSWORD_RESET);
   });
 
   it('sendPasswordResetEmail renders the reset URL and expiry notice in the body', async () => {
@@ -94,6 +94,6 @@ describe('MailService (integration)', () => {
       process.env.MAIL_FROM ?? '"StreamTube" <noreply@streamtube.com>';
     const expectedAddress =
       configuredFrom.match(/<(.+)>/)?.[1] ?? configuredFrom;
-    expect(messages[0].From.Address).toBe(expectedAddress);
+    expect(messages[0]?.From.Address).toBe(expectedAddress);
   });
 });

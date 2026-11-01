@@ -12,11 +12,61 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_started
+      rustfs:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      S3_ENDPOINT: "${S3_ENDPOINT:-http://rustfs:9000}"
+      S3_REGION: "${S3_REGION:-us-east-1}"
+      S3_ACCESS_KEY_ID: "${S3_ACCESS_KEY_ID:-streamtube}"
+      S3_SECRET_ACCESS_KEY: "${S3_SECRET_ACCESS_KEY:-streamtube-local-secret}"
+      S3_BUCKET: "${S3_BUCKET:-streamtube-videos}"
+      S3_FORCE_PATH_STYLE: "${S3_FORCE_PATH_STYLE:-true}"
+      S3_CREATE_BUCKET_IF_MISSING: "${S3_CREATE_BUCKET_IF_MISSING:-true}"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_USERNAME: "${REDIS_USERNAME:-default}"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-streamtube-redis-local}"
+      REDIS_DB: "${REDIS_DB:-0}"
+
+  video-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      rustfs:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USERNAME: "${DB_USERNAME:-streamtube}"
+      DB_PASSWORD: "${DB_PASSWORD:-streamtube}"
+      DB_NAME: "${DB_NAME:-streamtube}"
+      S3_ENDPOINT: "${S3_ENDPOINT:-http://rustfs:9000}"
+      S3_REGION: "${S3_REGION:-us-east-1}"
+      S3_ACCESS_KEY_ID: "${S3_ACCESS_KEY_ID:-streamtube}"
+      S3_SECRET_ACCESS_KEY: "${S3_SECRET_ACCESS_KEY:-streamtube-local-secret}"
+      S3_BUCKET: "${S3_BUCKET:-streamtube-videos}"
+      S3_FORCE_PATH_STYLE: "${S3_FORCE_PATH_STYLE:-true}"
+      S3_CREATE_BUCKET_IF_MISSING: "${S3_CREATE_BUCKET_IF_MISSING:-true}"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_USERNAME: "${REDIS_USERNAME:-default}"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-streamtube-redis-local}"
+      REDIS_DB: "${REDIS_DB:-0}"
 
   db:
     image: postgres:17
     ports:
-      - "5432:5432"
+      - "${DB_HOST_PORT:-5432}:5432"
     environment:
       - POSTGRES_USER=streamtube
       - POSTGRES_PASSWORD=streamtube
@@ -32,5 +82,44 @@ services:
     ports:
       - "1025:1025"
       - "8025:8025"
+
+  rustfs:
+    image: rustfs/rustfs:1.0.4
+    ports:
+      - "${RUSTFS_HOST_API_PORT:-9000}:9000"
+      - "${RUSTFS_HOST_CONSOLE_PORT:-9001}:9001"
+    environment:
+      RUSTFS_ACCESS_KEY: "${S3_ACCESS_KEY_ID:-streamtube}"
+      RUSTFS_SECRET_KEY: "${S3_SECRET_ACCESS_KEY:-streamtube-local-secret}"
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+    command: ["/data"]
+    volumes:
+      - rustfs-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-streamtube-redis-local}"]
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    environment:
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-streamtube-redis-local}"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  rustfs-data:
+  redis-data:
 
 
