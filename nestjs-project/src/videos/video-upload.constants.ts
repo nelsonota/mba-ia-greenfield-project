@@ -1,0 +1,3 @@
+export const MAX_VIDEO_SIZE_BYTES = 10 * 1024 * 1024 * 1024;
+export const UPLOAD_PART_SIZE_BYTES = 64 * 1024 * 1024;
+export const MAX_MULTIPART_PARTS = 10_000;

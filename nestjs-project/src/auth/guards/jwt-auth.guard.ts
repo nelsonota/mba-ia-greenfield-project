@@ -22,15 +22,30 @@ export class JwtAuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) return true;
-
     const request = context
       .switchToHttp()
       .getRequest<{ headers: Record<string, string>; user: unknown }>();
     const authHeader = request.headers?.authorization;
 
+    if (isPublic) {
+      if (authHeader?.startsWith(BEARER_PREFIX)) {
+        try {
+          request.user = await this.jwtService.verifyAsync<JwtPayload>(
+            authHeader.slice(BEARER_PREFIX.length),
+          );
+        } catch {
+          // Public resources remain available anonymously when an optional token is invalid.
+        }
+      }
+      return true;
+    }
+
     if (!authHeader || !authHeader.startsWith(BEARER_PREFIX)) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException({
+        statusCode: 401,
+        error: 'UNAUTHENTICATED',
+        message: 'Authentication is required',
+      });
     }
 
     const token = authHeader.slice(BEARER_PREFIX.length);
@@ -40,7 +55,11 @@ export class JwtAuthGuard implements CanActivate {
       request.user = payload;
       return true;
     } catch {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException({
+        statusCode: 401,
+        error: 'UNAUTHENTICATED',
+        message: 'Authentication is required',
+      });
     }
   }
 }

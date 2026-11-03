@@ -3,14 +3,17 @@ import { ValidationExceptionFilter } from './validation-exception.filter';
 
 describe('ValidationExceptionFilter', () => {
   let filter: ValidationExceptionFilter;
-  let mockJson: jest.Mock;
-  let mockStatus: jest.Mock;
+  let mockJson: jest.Mock<void, [unknown]>;
+  let mockStatus: jest.Mock<{ json: typeof mockJson }, [number]>;
   let mockHost: ArgumentsHost;
 
   beforeEach(() => {
     filter = new ValidationExceptionFilter();
-    mockJson = jest.fn();
-    mockStatus = jest.fn().mockReturnValue({ json: mockJson });
+    mockJson = jest.fn<void, [unknown]>();
+    mockStatus = jest.fn((statusCode: number) => ({
+      json: mockJson,
+      statusCode,
+    }));
 
     mockHost = {
       switchToHttp: () => ({
@@ -19,8 +22,8 @@ describe('ValidationExceptionFilter', () => {
       }),
       getArgs: () => [],
       getArgByIndex: () => null,
-      switchToRpc: () => ({}) as any,
-      switchToWs: () => ({}) as any,
+      switchToRpc: () => ({}) as never,
+      switchToWs: () => ({}) as never,
       getType: () => 'http',
     } as unknown as ArgumentsHost;
   });
