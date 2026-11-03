@@ -1,12 +1,18 @@
-import { QueryFailedError } from 'typeorm';
+import { DataSource, EntityManager, QueryFailedError } from 'typeorm';
 import { ChannelsService } from './channels.service';
 import { Channel } from './entities/channel.entity';
 
-function makeManager(overrides: Record<string, jest.Mock> = {}): any {
+type ManagerMock = {
+  findOne: jest.Mock<Promise<Channel | null>, unknown[]>;
+  create: jest.Mock<Channel, unknown[]>;
+  save: jest.Mock<Promise<Channel>, unknown[]>;
+};
+
+function makeManager(overrides: Partial<ManagerMock> = {}): ManagerMock {
   return {
-    findOne: jest.fn(),
-    create: jest.fn(),
-    save: jest.fn(),
+    findOne: jest.fn<Promise<Channel | null>, unknown[]>(),
+    create: jest.fn<Channel, unknown[]>(),
+    save: jest.fn<Promise<Channel>, unknown[]>(),
     ...overrides,
   };
 }
@@ -24,16 +30,20 @@ function makeChannel(nickname: string): Channel {
 }
 
 function makeUniqueError(): QueryFailedError {
-  const err = new QueryFailedError('INSERT', [], new Error()) as any;
-  err.code = '23505';
-  err.detail = 'Key (nickname)=(abc) already exists.';
-  return err;
+  const driverError = Object.assign(new Error('Unique constraint violation'), {
+    code: '23505',
+    detail: 'Key (nickname)=(abc) already exists.',
+  });
+  return new QueryFailedError('INSERT', [], driverError);
 }
 
-function makeDataSource(manager: any): any {
+function makeDataSource(manager: ManagerMock): DataSource {
   return {
-    transaction: jest.fn((cb: (manager: any) => Promise<any>) => cb(manager)),
-  };
+    transaction: jest.fn(
+      (callback: (manager: EntityManager) => Promise<Channel>) =>
+        callback(manager as unknown as EntityManager),
+    ),
+  } as unknown as DataSource;
 }
 
 describe('ChannelsService', () => {
